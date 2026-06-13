@@ -1,3 +1,5 @@
+import tab_converter
+
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 # ----- 检测 AI 依赖是否可用 -----
@@ -74,6 +76,7 @@ async def upload_audio(file: UploadFile = File(...)):
                 "start_time": round(float(n.start_time_s), 2),
                 "end_time": round(float(n.end_time_s), 2),
             })
-        return {"filename": file.filename, "size_bytes": len(content), "mode": "ai", "notes": notes}
+        converted_notes = tab_converter.convert_notes_to_tab(notes)
+        return {"filename": file.filename, "size_bytes": len(content), "mode": "ai", "notes": converted_notes}
     finally:
         os.unlink(tmp_path)
