@@ -5,7 +5,7 @@
 import { ref } from 'vue'
 
 // ref 是 Vue 的响应式数据——值变了，页面自动跟着变
-const message = ref('GuitarTab AI - 电吉他 AI 辅助扒谱工具')
+const message = ref('GuiuarTab AI - 电吉他 AI 辅助扒谱工具')
 const uploadedFile = ref<File | null>(null)
 const uploadResult = ref('')
 
