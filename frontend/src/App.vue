@@ -1,44 +1,48 @@
-<script setup lang="ts">
-import { ref } from 'vue'
+﻿<script setup lang="ts">
+import { ref } from "vue"
 
 // 页面状态 —— ref() 是响应式数据，值变了页面自动刷新
-const message = ref('GuitarTab AI - 电吉他 AI 辅助扒谱工具')
+const message = ref("GuitarTab AI - 电吉他 AI 辅助扒谱工具")
 const uploadedFile = ref<File | null>(null)
-const uploadResult = ref('')
-const tabNotes = ref<any[]>([])  // 六线谱数据：弦号、品位、音高、时间
+const uploadResult = ref("")
+const tabNotes = ref<any[]>([])   // 六线谱数据：弦号、品位、音高、时间
+const tabText = ref("")           // ASCII 六线谱文本（后端 format_tab_string 的输出）
 
 // 文件选择
 function onFileSelected(event: Event) {
   const input = event.target as HTMLInputElement
   if (input.files && input.files[0]) {
     uploadedFile.value = input.files[0]
-    uploadResult.value = ''
+    uploadResult.value = ""
+    tabText.value = ""
     tabNotes.value = []
   }
 }
 
-// 上传并解析结果
+// 上传音频并解析结果
 async function uploadFile() {
   if (!uploadedFile.value) return
 
   const formData = new FormData()
-  formData.append('file', uploadedFile.value)
+  formData.append("file", uploadedFile.value)
 
-  const response = await fetch('/api/upload', {
-    method: 'POST',
-    body: formData
+  const response = await fetch("/api/upload", {
+    method: "POST",
+    body: formData,
   })
 
   const data = await response.json()
 
   // 打印完整返回数据到控制台 —— 打开 F12 Console 标签就能看到
-  console.log('=== 后端返回数据 ===')
-  console.log('文件名:', data.filename)
-  console.log('模式:', data.mode)
-  console.log('音符列表:', data.notes)
+  console.log("=== 后端返回数据 ===")
+  console.log("文件名:", data.filename)
+  console.log("模式:", data.mode)
+  console.log("tab_text:", data.tab_text)
+  console.log("音符列表:", data.notes)
 
   uploadResult.value = `${data.filename} (${data.size_bytes} 字节) · ${data.mode} 模式`
   tabNotes.value = data.notes || []
+  tabText.value = data.tab_text || ""
 }
 </script>
 
@@ -53,6 +57,9 @@ async function uploadFile() {
 
     <p v-if="uploadResult" class="result">{{ uploadResult }}</p>
 
+    <!-- 六线谱 ASCII 文本可视化 -->
+    <pre v-if="tabText" class="tab-display">{{ tabText }}</pre>
+
     <!-- 六线谱数据表格 -->
     <table v-if="tabNotes.length > 0" class="tab-table">
       <thead>
@@ -66,8 +73,8 @@ async function uploadFile() {
       </thead>
       <tbody>
         <tr v-for="(note, i) in tabNotes" :key="i">
-          <td>{{ note.string ?? '?' }}弦</td>
-          <td>{{ note.fret ?? '?' }}品</td>
+          <td>{{ note.string ?? "?" }}弦</td>
+          <td>{{ note.fret ?? "?" }}品</td>
           <td>{{ note.pitch }}</td>
           <td>{{ note.start_time }}s</td>
           <td>{{ note.end_time }}s</td>
@@ -139,5 +146,20 @@ button {
   font-size: 0.8rem;
   color: #999;
   text-align: center;
+}
+
+/* 六线谱 ASCII 文本展示块 */
+.tab-display {
+  margin-top: 24px;
+  padding: 20px 24px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  font-family: "Courier New", "Consolas", monospace;
+  font-size: 0.95rem;
+  line-height: 1.8;
+  border-radius: 6px;
+  overflow-x: auto;
+  white-space: pre;
+  letter-spacing: 0;
 }
 </style>

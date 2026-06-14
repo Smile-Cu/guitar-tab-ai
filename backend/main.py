@@ -50,16 +50,16 @@ async def upload_audio(file: UploadFile = File(...)):
     content = await file.read()
 
     if not AI_AVAILABLE:
-        # 模拟模式：返回示例音符数据
+        # 模拟模式
+        mock_notes = tab_converter.get_mock_notes()
+        converted = tab_converter.convert_notes_to_tab(mock_notes)
+        tab_text = tab_converter.format_tab_string(converted)
         return {
             "filename": file.filename,
             "size_bytes": len(content),
             "mode": "mock",
-            "notes": [
-                {"pitch": 64, "start_time": 0.0, "end_time": 0.5},
-                {"pitch": 67, "start_time": 0.5, "end_time": 1.0},
-                {"pitch": 71, "start_time": 1.0, "end_time": 1.5},
-            ]
+            "notes": converted,
+            "tab_text": tab_text
         }
 
     # AI 模式：真实推理
@@ -77,6 +77,7 @@ async def upload_audio(file: UploadFile = File(...)):
                 "end_time": round(float(n.end_time_s), 2),
             })
         converted_notes = tab_converter.convert_notes_to_tab(notes)
-        return {"filename": file.filename, "size_bytes": len(content), "mode": "ai", "notes": converted_notes}
+        tab_text = tab_converter.format_tab_string(converted_notes)
+        return {"filename": file.filename, "size_bytes": len(content), "mode": "ai", "notes": converted_notes, "tab_text": tab_text}
     finally:
         os.unlink(tmp_path)
