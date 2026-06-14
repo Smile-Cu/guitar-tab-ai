@@ -11,9 +11,13 @@ try:
 
     import librosa
     from basic_pitch.inference import predict
-    from basic_pitch import ICASSP_2022_MODEL_PATH
+    from basic_pitch import ICASSP_2022_MODEL_PATH, FilenameSuffix, build_icassp_2022_model_path
+
+    # SavedModel 格式在 TF 2.21 下有兼容性问题，改用 TFLite
+    TFLITE_MODEL_PATH = str(build_icassp_2022_model_path(FilenameSuffix.tflite))
+
     AI_AVAILABLE = True
-    print("[AI 模式] basic-pitch + librosa 已加载")
+    print(f"[AI 模式] basic-pitch + librosa 已加载 (TFLite)")
 except ImportError as e:
     print(f"[模拟模式] AI 依赖未安装，使用模拟数据 (原因: {e})")
 
@@ -34,12 +38,11 @@ def read_root():
     return {
         "status": "ok",
         "ai_available": AI_AVAILABLE,
-        "message": "GuitarTab AI 后端运行中"
+        "message": "GuitarTab AI 后端运行中",
     }
 
 
 def _mock_result(filename: str, size_bytes: int):
-    """生成模拟模式返回数据"""
     mock_notes = tab_converter.get_mock_notes()
     converted = tab_converter.convert_notes_to_tab(mock_notes)
     tab_text = tab_converter.format_tab_string(converted)
@@ -54,7 +57,6 @@ def _mock_result(filename: str, size_bytes: int):
 
 @app.post("/api/upload")
 async def upload_audio(file: UploadFile = File(...)):
-    # 校验文件格式
     allowed = (".wav", ".mp3", ".ogg", ".flac", ".m4a")
     if not file.filename or not any(
         file.filename.lower().endswith(ext) for ext in allowed
@@ -66,11 +68,9 @@ async def upload_audio(file: UploadFile = File(...)):
     fname = file.filename or "unknown"
     fsize = len(content)
 
-    # 模拟模式：直接返回示例数据
     if not AI_AVAILABLE:
         return _mock_result(fname, fsize)
 
-    # AI 模式：尝试真实推理，失败则降级到模拟模式
     import tempfile
     import os
     import traceback
@@ -81,7 +81,10 @@ async def upload_audio(file: UploadFile = File(...)):
             tmp.write(content)
             tmp_path = tmp.name
 
-        model_output, midi_data, note_events = predict(tmp_path)
+        # 使用 TFLite 模型路径，避免 SavedModel 兼容性问题
+        model_output, midi_data, note_events = predict(
+            tmp_path, model_or_model_path=TFLITE_MODEL_PATH
+        )
 
         notes = []
         for n in note_events:
@@ -103,7 +106,6 @@ async def upload_audio(file: UploadFile = File(...)):
         }
 
     except Exception as e:
-        # AI 推理失败时降级到模拟模式
         print(f"[AI 推理失败，降级为模拟模式] {e}")
         traceback.print_exc()
         result = _mock_result(fname, fsize)
