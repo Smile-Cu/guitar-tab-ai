@@ -1,5 +1,6 @@
 ﻿<script setup lang="ts">
 import { ref } from "vue"
+import FretBoard from "./components/FretBoard.vue"
 
 // 页面状态 —— ref() 是响应式数据，值变了页面自动刷新
 const message = ref("GuitarTab AI - 电吉他 AI 辅助扒谱工具")
@@ -56,6 +57,9 @@ async function uploadFile() {
     </div>
 
     <p v-if="uploadResult" class="result">{{ uploadResult }}</p>
+
+    <!-- 指板可视化 -->
+    <FretBoard v-if="tabNotes.length > 0" :notes="tabNotes" />
 
     <!-- 六线谱 ASCII 文本可视化 -->
     <pre v-if="tabText" class="tab-display">{{ tabText }}</pre>
