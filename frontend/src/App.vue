@@ -1,24 +1,23 @@
 <script setup lang="ts">
-// <script setup> 是 Vue 3 的简写写法，不需要写 return
-// lang="ts" 表示这个文件用 TypeScript
-
 import { ref } from 'vue'
 
-// ref 是 Vue 的响应式数据——值变了，页面自动跟着变
-const message = ref('GuiuarTab AI - 电吉他 AI 辅助扒谱工具')
+// 页面状态 —— ref() 是响应式数据，值变了页面自动刷新
+const message = ref('GuitarTab AI - 电吉他 AI 辅助扒谱工具')
 const uploadedFile = ref<File | null>(null)
 const uploadResult = ref('')
+const tabNotes = ref<any[]>([])  // 六线谱数据：弦号、品位、音高、时间
 
-// 处理文件选择：用户选完文件后，暂存到 uploadedFile 里
+// 文件选择
 function onFileSelected(event: Event) {
   const input = event.target as HTMLInputElement
   if (input.files && input.files[0]) {
     uploadedFile.value = input.files[0]
     uploadResult.value = ''
+    tabNotes.value = []
   }
 }
 
-// 上传文件到后端
+// 上传并解析结果
 async function uploadFile() {
   if (!uploadedFile.value) return
 
@@ -31,7 +30,15 @@ async function uploadFile() {
   })
 
   const data = await response.json()
-  uploadResult.value = `收到: ${data.filename} (${data.size_bytes} 字节)`
+
+  // 打印完整返回数据到控制台 —— 打开 F12 Console 标签就能看到
+  console.log('=== 后端返回数据 ===')
+  console.log('文件名:', data.filename)
+  console.log('模式:', data.mode)
+  console.log('音符列表:', data.notes)
+
+  uploadResult.value = `${data.filename} (${data.size_bytes} 字节) · ${data.mode} 模式`
+  tabNotes.value = data.notes || []
 }
 </script>
 
@@ -39,41 +46,58 @@ async function uploadFile() {
   <div class="app">
     <h1>{{ message }}</h1>
 
-    <!-- 文件上传区域 -->
     <div class="upload-section">
-      <input
-        type="file"
-        accept="audio/*"
-        @change="onFileSelected"
-      />
-      <button @click="uploadFile" :disabled="!uploadedFile">
-        上传音频
-      </button>
+      <input type="file" accept="audio/*" @change="onFileSelected" />
+      <button @click="uploadFile" :disabled="!uploadedFile">上传音频</button>
     </div>
 
-    <!-- 显示上传结果 -->
     <p v-if="uploadResult" class="result">{{ uploadResult }}</p>
+
+    <!-- 六线谱数据表格 -->
+    <table v-if="tabNotes.length > 0" class="tab-table">
+      <thead>
+        <tr>
+          <th>弦号</th>
+          <th>品位</th>
+          <th>MIDI 音高</th>
+          <th>开始</th>
+          <th>结束</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(note, i) in tabNotes" :key="i">
+          <td>{{ note.string ?? '?' }}弦</td>
+          <td>{{ note.fret ?? '?' }}品</td>
+          <td>{{ note.pitch }}</td>
+          <td>{{ note.start_time }}s</td>
+          <td>{{ note.end_time }}s</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p v-if="tabNotes.length > 0" class="hint">
+      按下 F12 → Console 标签可以看到后端返回的完整数据
+    </p>
   </div>
 </template>
 
 <style scoped>
-/* scoped 表示这里的样式只影响当前组件 */
 .app {
   max-width: 700px;
-  margin: 60px auto;
+  margin: 40px auto;
   font-family: system-ui, sans-serif;
-  text-align: center;
 }
 
 h1 {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   color: #222;
+  text-align: center;
 }
 
 .upload-section {
-  margin: 24px 0;
+  margin: 20px 0;
   display: flex;
-  gap: 12px;
+  gap: 10px;
   justify-content: center;
 }
 
@@ -84,5 +108,36 @@ button {
 
 .result {
   color: #4a7c59;
+  text-align: center;
+}
+
+.tab-table {
+  width: 100%;
+  margin-top: 20px;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.tab-table th,
+.tab-table td {
+  border: 1px solid #ddd;
+  padding: 8px 12px;
+  text-align: center;
+}
+
+.tab-table th {
+  background: #f5f5f5;
+  font-weight: 600;
+}
+
+.tab-table tbody tr:hover {
+  background: #f9f9f9;
+}
+
+.hint {
+  margin-top: 12px;
+  font-size: 0.8rem;
+  color: #999;
+  text-align: center;
 }
 </style>
