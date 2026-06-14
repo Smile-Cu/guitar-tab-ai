@@ -1,0 +1,121 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>方案 A · 暗色录音棚</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0e14; color: #c9d1d9; font-family: "SF Mono","Cascadia Code","Consolas",monospace; }
+  .app { max-width: 800px; margin: 0 auto; padding: 48px 24px; }
+
+  .brand { text-align: center; margin-bottom: 32px; }
+  .brand h1 { font-size: 1.6rem; font-weight: 600; letter-spacing: 2px; color: #00ff88; margin-bottom: 6px; }
+  .brand p { font-size: 0.7rem; color: #8b949e; letter-spacing: 4px; text-transform: uppercase; }
+
+  .controls { display: flex; gap: 12px; justify-content: center; margin-bottom: 28px; }
+  .controls input[type=file] { display: none; }
+  .controls label.file-btn { padding: 10px 20px; border: 1px solid #30363d; border-radius: 4px; color: #c9d1d9; cursor: pointer; font-size: 0.8rem; transition: all .2s; background: #161b22; }
+  .controls label.file-btn:hover { border-color: #00ff88; color: #00ff88; }
+  .controls button { padding: 10px 28px; border: none; border-radius: 4px; background: #00ff88; color: #0a0e14; font-weight: 700; font-size: 0.8rem; cursor: pointer; letter-spacing: 1px; transition: all .2s; }
+  .controls button:hover { background: #00cc6a; box-shadow: 0 0 20px rgba(0,255,136,.25); }
+  .controls button:disabled { background: #21262d; color: #484f58; cursor: not-allowed; box-shadow: none; }
+
+  .mode-badge { display: inline-block; padding: 3px 10px; border-radius: 3px; font-size: 0.65rem; letter-spacing: 1px; margin-bottom: 20px; }
+  .mode-badge.ai { background: rgba(0,255,136,.12); color: #00ff88; border: 1px solid rgba(0,255,136,.25); }
+  .mode-badge.mock { background: rgba(255,166,0,.12); color: #ffa600; border: 1px solid rgba(255,166,0,.25); }
+
+  .section-label { font-size: 0.6rem; color: #484f58; letter-spacing: 3px; text-transform: uppercase; margin: 28px 0 10px; }
+
+  .tab-view { background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 24px 20px; font-size: 0.85rem; line-height: 2; color: #8b949e; overflow-x: auto; white-space: pre; }
+  .tab-view .string-e { color: #58a6ff; }
+  .tab-view .string-B { color: #7ee787; }
+  .tab-view .string-fret { color: #f0883e; font-weight: 700; }
+
+  .fretboard { background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 20px; text-align: center; }
+  .fretboard svg { max-width: 100%; }
+
+  .data-grid { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.75rem; }
+  .data-grid th { background: #161b22; color: #00ff88; padding: 8px 12px; text-align: center; font-weight: 600; border-bottom: 1px solid #21262d; }
+  .data-grid td { padding: 7px 12px; text-align: center; border-bottom: 1px solid #161b22; color: #8b949e; }
+  .data-grid tr:hover td { background: #161b22; color: #c9d1d9; }
+
+  .footer { text-align: center; margin-top: 40px; font-size: 0.6rem; color: #21262d; letter-spacing: 2px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="brand">
+    <h1>GUITARTAB AI</h1>
+    <p>Neural Audio Transcription</p>
+  </div>
+
+  <div class="controls">
+    <label class="file-btn" for="file">SELECT FILE</label>
+    <input type="file" id="file" accept="audio/*" />
+    <button>PROCESS</button>
+  </div>
+
+  <div class="mode-badge ai">AI MODE</div>
+
+  <div class="section-label">TABLATURE</div>
+  <pre class="tab-view"><span class="string-e">1(e)</span> |  <span class="string-fret">0</span>  --  --
+<span class="string-B">2(B)</span> |  --  <span class="string-fret">2</span>  --
+3(G) |  --  --  --
+4(D) |  --  --  <span class="string-fret">2</span>
+5(A) |  --  <span class="string-fret">2</span>  --
+6(E) |  <span class="string-fret">0</span>  --  --</pre>
+
+  <div class="section-label">FRETBOARD</div>
+  <div class="fretboard">
+    <svg width="480" height="200" viewBox="0 0 480 200">
+      <rect width="480" height="200" fill="#0d1117" rx="4"/>
+      <!-- strings -->
+      <line x1="50" y1="30" x2="450" y2="30" stroke="#58a6ff" stroke-width="2.5"/>
+      <line x1="50" y1="62" x2="450" y2="62" stroke="#7ee787" stroke-width="1.5"/>
+      <line x1="50" y1="94" x2="450" y2="94" stroke="#c9d1d9" stroke-width="1.8"/>
+      <line x1="50" y1="126" x2="450" y2="126" stroke="#c9d1d9" stroke-width="2.2"/>
+      <line x1="50" y1="158" x2="450" y2="158" stroke="#c9d1d9" stroke-width="2.6"/>
+      <line x1="50" y1="190" x2="450" y2="190" stroke="#c9d1d9" stroke-width="3"/>
+      <!-- frets -->
+      <line x1="50" y1="30" x2="50" y2="190" stroke="#30363d" stroke-width="2.5"/>
+      <line x1="130" y1="30" x2="130" y2="190" stroke="#21262d" stroke-width="1"/>
+      <line x1="210" y1="30" x2="210" y2="190" stroke="#21262d" stroke-width="1"/>
+      <line x1="290" y1="30" x2="290" y2="190" stroke="#21262d" stroke-width="1"/>
+      <line x1="370" y1="30" x2="370" y2="190" stroke="#21262d" stroke-width="1"/>
+      <line x1="450" y1="30" x2="450" y2="190" stroke="#21262d" stroke-width="1"/>
+      <!-- fret dots -->
+      <circle cx="170" cy="110" r="5" fill="#21262d"/>
+      <circle cx="330" cy="110" r="5" fill="#21262d"/>
+      <!-- note dots -->
+      <circle cx="50" cy="190" r="10" fill="#e74c3c" opacity="0.9"/><text x="50" y="194" font-size="8" fill="white" text-anchor="middle" font-weight="bold">E2</text>
+      <circle cx="130" cy="158" r="10" fill="#e74c3c" opacity="0.9"/><text x="130" y="162" font-size="8" fill="white" text-anchor="middle" font-weight="bold">B2</text>
+      <circle cx="290" cy="126" r="10" fill="#e74c3c" opacity="0.9"/><text x="290" y="130" font-size="8" fill="white" text-anchor="middle" font-weight="bold">E3</text>
+      <!-- labels -->
+      <text x="30" y="34" font-size="10" fill="#58a6ff" text-anchor="middle">e</text>
+      <text x="30" y="66" font-size="10" fill="#7ee787" text-anchor="middle">B</text>
+      <text x="30" y="98" font-size="10" fill="#8b949e" text-anchor="middle">G</text>
+      <text x="30" y="130" font-size="10" fill="#8b949e" text-anchor="middle">D</text>
+      <text x="30" y="162" font-size="10" fill="#8b949e" text-anchor="middle">A</text>
+      <text x="30" y="194" font-size="10" fill="#8b949e" text-anchor="middle">E</text>
+      <text x="50" y="205" font-size="9" fill="#484f58" text-anchor="middle">0</text>
+      <text x="130" y="205" font-size="9" fill="#484f58" text-anchor="middle">2</text>
+      <text x="210" y="205" font-size="9" fill="#484f58" text-anchor="middle">3</text>
+      <text x="290" y="205" font-size="9" fill="#484f58" text-anchor="middle">5</text>
+    </svg>
+  </div>
+
+  <div class="section-label">DATA</div>
+  <table class="data-grid">
+    <thead><tr><th>STRING</th><th>FRET</th><th>NOTE</th><th>START</th><th>END</th></tr></thead>
+    <tbody>
+      <tr><td>6(E)</td><td>0</td><td>E2</td><td>0.00s</td><td>0.50s</td></tr>
+      <tr><td>5(A)</td><td>2</td><td>B2</td><td>0.50s</td><td>1.00s</td></tr>
+      <tr><td>4(D)</td><td>2</td><td>E3</td><td>1.00s</td><td>1.50s</td></tr>
+    </tbody>
+  </table>
+
+  <div class="footer">GUITARTAB AI · 2026</div>
+</div>
+</body>
+</html>

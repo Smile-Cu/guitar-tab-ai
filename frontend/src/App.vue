@@ -2,14 +2,15 @@
 import { ref } from "vue"
 import FretBoard from "./components/FretBoard.vue"
 
-// 页面状态 —— ref() 是响应式数据，值变了页面自动刷新
-const message = ref("GuitarTab AI - 电吉他 AI 辅助扒谱工具")
+const message = ref("GuitarTab AI")
+const subtitle = ref("上传音频，AI 自动生成吉他六线谱")
 const uploadedFile = ref<File | null>(null)
 const uploadResult = ref("")
-const tabNotes = ref<any[]>([])   // 六线谱数据：弦号、品位、音高、时间
-const tabText = ref("")           // ASCII 六线谱文本（后端 format_tab_string 的输出）
+const tabNotes = ref<any[]>([])
+const tabText = ref("")
+const mode = ref<"ai" | "mock" | "">("")
+const fileName = ref("")
 
-// 文件选择
 function onFileSelected(event: Event) {
   const input = event.target as HTMLInputElement
   if (input.files && input.files[0]) {
@@ -17,10 +18,11 @@ function onFileSelected(event: Event) {
     uploadResult.value = ""
     tabText.value = ""
     tabNotes.value = []
+    mode.value = ""
+    fileName.value = input.files[0].name
   }
 }
 
-// 上传音频并解析结果
 async function uploadFile() {
   if (!uploadedFile.value) return
 
@@ -34,136 +36,315 @@ async function uploadFile() {
 
   const data = await response.json()
 
-  // 打印完整返回数据到控制台 —— 打开 F12 Console 标签就能看到
   console.log("=== 后端返回数据 ===")
   console.log("文件名:", data.filename)
   console.log("模式:", data.mode)
   console.log("tab_text:", data.tab_text)
   console.log("音符列表:", data.notes)
 
-  uploadResult.value = `${data.filename} (${data.size_bytes} 字节) · ${data.mode} 模式`
+  uploadResult.value = `${data.filename} (${data.size_bytes} 字节)`
+  mode.value = data.mode?.includes("ai") ? "ai" : "mock"
   tabNotes.value = data.notes || []
   tabText.value = data.tab_text || ""
 }
 </script>
 
 <template>
-  <div class="app">
-    <h1>{{ message }}</h1>
+  <div class="app-container">
+    <!-- 顶部品牌区 -->
+    <header class="brand">
+      <div class="brand-icon">🎸</div>
+      <h1>{{ message }}</h1>
+      <p class="brand-sub">{{ subtitle }}</p>
+    </header>
 
-    <div class="upload-section">
-      <input type="file" accept="audio/*" @change="onFileSelected" />
-      <button @click="uploadFile" :disabled="!uploadedFile">上传音频</button>
+    <!-- 上传卡片 -->
+    <section class="card upload-card">
+      <div class="upload-row">
+        <label class="file-drop" for="audio-file">
+          <span v-if="!fileName">点击选择音频文件</span>
+          <span v-else class="file-name">{{ fileName }}</span>
+        </label>
+        <input id="audio-file" type="file" accept="audio/*" @change="onFileSelected" />
+        <button class="btn-primary" :disabled="!uploadedFile" @click="uploadFile">
+          解析音频
+        </button>
+      </div>
+    </section>
+
+    <!-- 模式标签 -->
+    <div v-if="mode" class="mode-pill" :class="mode">
+      <span class="mode-dot"></span>
+      {{ mode === "ai" ? "AI 模式" : "模拟模式" }}
     </div>
 
-    <p v-if="uploadResult" class="result">{{ uploadResult }}</p>
+    <!-- 结果区域 — 六线谱 + 指板 + 数据 依次排列 -->
+    <div v-if="tabNotes.length > 0" class="results">
 
-    <!-- 指板可视化 -->
-    <FretBoard v-if="tabNotes.length > 0" :notes="tabNotes" />
+      <!-- 六线谱文本 -->
+      <section class="card" v-if="tabText">
+        <div class="card-label">六线谱</div>
+        <pre class="tab-view">{{ tabText }}</pre>
+      </section>
 
-    <!-- 六线谱 ASCII 文本可视化 -->
-    <pre v-if="tabText" class="tab-display">{{ tabText }}</pre>
+      <!-- 指板图 -->
+      <section class="card fretboard-card">
+        <div class="card-label">指板位置</div>
+        <FretBoard :notes="tabNotes" />
+      </section>
 
-    <!-- 六线谱数据表格 -->
-    <table v-if="tabNotes.length > 0" class="tab-table">
-      <thead>
-        <tr>
-          <th>弦号</th>
-          <th>品位</th>
-          <th>MIDI 音高</th>
-          <th>开始</th>
-          <th>结束</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="(note, i) in tabNotes" :key="i">
-          <td>{{ note.string ?? "?" }}弦</td>
-          <td>{{ note.fret ?? "?" }}品</td>
-          <td>{{ note.pitch }}</td>
-          <td>{{ note.start_time }}s</td>
-          <td>{{ note.end_time }}s</td>
-        </tr>
-      </tbody>
-    </table>
+      <!-- 数据表格 -->
+      <section class="card">
+        <div class="card-label">音符数据</div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>弦号</th>
+              <th>品位</th>
+              <th>音符</th>
+              <th>开始</th>
+              <th>结束</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(note, i) in tabNotes" :key="i">
+              <td>{{ note.string ?? "?" }}弦</td>
+              <td>{{ note.fret ?? "?" }}品</td>
+              <td>{{ note.pitch }}</td>
+              <td>{{ note.start_time }}s</td>
+              <td>{{ note.end_time }}s</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
 
-    <p v-if="tabNotes.length > 0" class="hint">
-      按下 F12 → Console 标签可以看到后端返回的完整数据
-    </p>
+    <!-- 结果文件信息 -->
+    <p v-if="uploadResult && tabNotes.length === 0" class="result-text">{{ uploadResult }}</p>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+      GuitarTab AI — 用 AI 帮你扒谱
+    </footer>
   </div>
 </template>
 
+<style>
+/* 全局重置 */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #f8fafc;
+  color: #1e293b;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+</style>
+
 <style scoped>
-.app {
-  max-width: 700px;
-  margin: 40px auto;
-  font-family: system-ui, sans-serif;
+.app-container {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 48px 20px 60px;
 }
 
-h1 {
-  font-size: 1.4rem;
-  color: #222;
+/* ---- 品牌 ---- */
+.brand {
   text-align: center;
+  margin-bottom: 44px;
+}
+.brand-icon {
+  font-size: 2rem;
+  margin-bottom: 6px;
+}
+.brand h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 2px;
+}
+.brand-sub {
+  font-size: 0.85rem;
+  color: #64748b;
 }
 
-.upload-section {
-  margin: 20px 0;
+/* ---- 卡片 ---- */
+.card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 22px 24px;
+  margin-bottom: 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+.card-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 14px;
+}
+
+/* ---- 上传区 ---- */
+.upload-row {
   display: flex;
-  gap: 10px;
-  justify-content: center;
+  gap: 12px;
+  align-items: center;
 }
-
-button {
-  padding: 8px 20px;
+.upload-row input[type="file"] {
+  display: none;
+}
+.file-drop {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 0.85rem;
+  color: #94a3b8;
   cursor: pointer;
-}
-
-.result {
-  color: #4a7c59;
+  transition: border-color 0.2s, background 0.2s;
   text-align: center;
 }
-
-.tab-table {
-  width: 100%;
-  margin-top: 20px;
-  border-collapse: collapse;
-  font-size: 0.9rem;
+.file-drop:hover {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+.file-drop .file-name {
+  color: #1e293b;
+  font-weight: 500;
 }
 
-.tab-table th,
-.tab-table td {
-  border: 1px solid #ddd;
-  padding: 8px 12px;
-  text-align: center;
-}
-
-.tab-table th {
-  background: #f5f5f5;
+.btn-primary {
+  padding: 12px 28px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
   font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn-primary:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+.btn-primary:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
-.tab-table tbody tr:hover {
-  background: #f9f9f9;
+/* ---- 模式标签 ---- */
+.mode-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.mode-pill .mode-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.mode-pill.ai {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.mode-pill.ai .mode-dot {
+  background: #2563eb;
+}
+.mode-pill.mock {
+  background: #fef3c7;
+  color: #92400e;
+}
+.mode-pill.mock .mode-dot {
+  background: #f59e0b;
 }
 
-.hint {
-  margin-top: 12px;
-  font-size: 0.8rem;
-  color: #999;
-  text-align: center;
-}
-
-/* 六线谱 ASCII 文本展示块 */
-.tab-display {
-  margin-top: 24px;
-  padding: 20px 24px;
-  background: #1a1a2e;
-  color: #e0e0e0;
-  font-family: "Courier New", "Consolas", monospace;
-  font-size: 0.95rem;
-  line-height: 1.8;
-  border-radius: 6px;
+/* ---- 六线谱文本 ---- */
+.tab-view {
+  background: #0f172a;
+  border-radius: 10px;
+  padding: 22px 20px;
+  font-family: "SF Mono", "Cascadia Code", "Consolas", monospace;
+  font-size: 0.82rem;
+  line-height: 2;
+  color: #e2e8f0;
   overflow-x: auto;
   white-space: pre;
-  letter-spacing: 0;
+}
+
+/* ---- 指板图 ---- */
+.fretboard-card {
+  background: #faf5eb;
+}
+
+/* ---- 数据表格 ---- */
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.8rem;
+}
+.data-table th {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 10px 14px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+}
+.data-table th:first-child {
+  border-radius: 8px 0 0 0;
+}
+.data-table th:last-child {
+  border-radius: 0 8px 0 0;
+}
+.data-table td {
+  padding: 9px 14px;
+  text-align: center;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+}
+.data-table tr:last-child td:first-child {
+  border-radius: 0 0 0 8px;
+}
+.data-table tr:last-child td:last-child {
+  border-radius: 0 0 8px 0;
+}
+.data-table tbody tr:hover td {
+  background: #f8fafc;
+}
+
+/* ---- 结果 & 页脚 ---- */
+.result-text {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 8px;
+}
+
+.footer {
+  text-align: center;
+  margin-top: 40px;
+  font-size: 0.75rem;
+  color: #94a3b8;
 }
 </style>

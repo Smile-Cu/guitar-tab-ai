@@ -21,19 +21,14 @@ function midiToName(pitch: number) {
   return `${NOTE_NAMES[pitch % 12]}${Math.floor(pitch / 12) - 1}`
 }
 
-// 计算显示哪段品位区间
 const fretRange = computed(() => {
   const valid = props.notes.filter(n => n.string && n.fret != null)
   if (valid.length === 0) return { start: 0, end: 5 }
-
   const frets = valid.map(n => n.fret)
   let min = Math.max(0, Math.min(...frets) - 1)
   let max = Math.min(19, Math.max(...frets) + 2)
-
-  // 保证至少显示 5 个品位
   while (max - min < 5 && max < 19) max++
   while (max - min < 5 && min > 0) min--
-
   return { start: min, end: max }
 })
 
@@ -48,16 +43,12 @@ const topPad = 16
 const bottomPad = 20
 const leftPad = 40
 const stringSpacing = 28
-
-// 可用绘图区域
 const drawWidth = computed(() => svgWidth.value - leftPad - 20)
 
-// 每个音符在 SVG 中的坐标
 function noteCoords(note: any) {
-  const s = note.string  // 1~6
+  const s = note.string
   const f = note.fret
   if (s == null || f == null) return null
-
   const fretIdx = f - fretRange.value.start
   const x = leftPad + (fretIdx / (visibleFrets.value.length - 1)) * drawWidth.value
   const y = topPad + (s - 1) * stringSpacing
@@ -74,7 +65,6 @@ const noteDots = computed(() => {
     }))
 })
 
-// 用 noteDots 去重（同一弦同品位只显示一次）
 const uniqueDots = computed(() => {
   const seen = new Set<string>()
   return noteDots.value.filter(d => {
@@ -87,8 +77,7 @@ const uniqueDots = computed(() => {
 </script>
 
 <template>
-  <div class="fretboard-wrapper">
-    <h3 class="fretboard-title">🎸 指板位置</h3>
+  <div class="fretboard-wrap">
     <svg
       :width="svgWidth"
       :height="svgHeight"
@@ -96,7 +85,7 @@ const uniqueDots = computed(() => {
       class="fretboard-svg"
     >
       <!-- 背景 -->
-      <rect :width="svgWidth" :height="svgHeight" fill="#f5f0e8" rx="4" />
+      <rect :width="svgWidth" :height="svgHeight" fill="transparent" rx="4" />
 
       <!-- 品位竖线 -->
       <line
@@ -106,7 +95,7 @@ const uniqueDots = computed(() => {
         :y1="topPad"
         :x2="leftPad + (fi / (visibleFrets.length - 1)) * drawWidth"
         :y2="topPad + 5 * stringSpacing"
-        :stroke="fret === 0 ? '#555' : '#aaa'"
+        :stroke="fret === 0 ? '#c5a880' : '#e2d5c3'"
         :stroke-width="fret === 0 ? 2.5 : 1"
       />
 
@@ -118,7 +107,7 @@ const uniqueDots = computed(() => {
         :cx="leftPad + ((fi - 0.5) / (visibleFrets.length - 1)) * drawWidth"
         :cy="topPad + 2.5 * stringSpacing"
         r="4"
-        fill="#ccc"
+        fill="#c5a880"
       />
 
       <!-- 琴弦 -->
@@ -129,8 +118,8 @@ const uniqueDots = computed(() => {
         :y1="topPad + (si - 1) * stringSpacing"
         :x2="leftPad + drawWidth"
         :y2="topPad + (si - 1) * stringSpacing"
-        :stroke="si === 1 ? '#777' : '#555'"
-        :stroke-width="6 - si * 0.5"
+        :stroke="si >= 5 ? '#94a3b8' : '#64748b'"
+        :stroke-width="7 - si * 0.5"
         stroke-linecap="round"
       />
 
@@ -140,9 +129,9 @@ const uniqueDots = computed(() => {
         :key="'label-' + si"
         :x="12"
         :y="topPad + (si - 1) * stringSpacing + 5"
-        :font-size="si === 1 ? 11 : 12"
+        :font-size="si === 1 ? 10 : 11"
         :font-weight="si === 6 ? 'bold' : 'normal'"
-        fill="#333"
+        fill="#475569"
         text-anchor="middle"
       >{{ STRING_LABELS[si - 1] }}</text>
 
@@ -152,28 +141,28 @@ const uniqueDots = computed(() => {
         :key="'fnum-' + fret"
         :x="leftPad + (fi / (visibleFrets.length - 1)) * drawWidth"
         :y="topPad + 5 * stringSpacing + 16"
-        font-size="10"
-        fill="#888"
+        font-size="9"
+        fill="#94a3b8"
         text-anchor="middle"
       >{{ fret }}</text>
 
-      <!-- 音符圆点（先去重，避免同一位置画多个） -->
+      <!-- 音符圆点 -->
       <g v-for="(dot, di) in uniqueDots" :key="'dot-' + di">
         <circle
           :cx="dot.x"
           :cy="dot.y"
-          r="10"
-          fill="#e74c3c"
-          stroke="#c0392b"
+          r="11"
+          fill="#2563eb"
+          stroke="#1d4ed8"
           stroke-width="1.5"
-          opacity="0.9"
+          opacity="0.92"
         />
         <text
           :x="dot.x"
           :y="dot.y + 4"
           font-size="9"
           fill="white"
-          font-weight="bold"
+          font-weight="600"
           text-anchor="middle"
         >{{ dot.name }}</text>
       </g>
@@ -182,14 +171,8 @@ const uniqueDots = computed(() => {
 </template>
 
 <style scoped>
-.fretboard-wrapper {
-  margin-top: 24px;
-}
-.fretboard-title {
-  font-size: 0.95rem;
-  color: #444;
-  margin-bottom: 12px;
-  text-align: center;
+.fretboard-wrap {
+  padding: 4px 0;
 }
 .fretboard-svg {
   display: block;
